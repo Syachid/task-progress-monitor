@@ -1,0 +1,5 @@
+description: >
+  Dashboard for Ninja Van Indonesia's Sales org tracking SalesCRM Tasks that are
+  never-updated, stale, overdue, or missing a due date, with role-based visibility
+  by Task Owner and manager.
+database: oceanbase
