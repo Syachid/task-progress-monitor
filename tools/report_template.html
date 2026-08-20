@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laporan Progress Task — Tim Indonesia</title>
+<style>
+  :root {
+    --bg:#f6f7f9; --panel:#fff; --border:#e3e6ea; --text:#1a1d21; --muted:#6b7280;
+    --accent:#c8102e; --accent-soft:#fdecef; --amber:#b45309; --amber-soft:#fef3c7;
+    --slate:#475569; --slate-soft:#eef2f6; --green:#15803d; --green-soft:#dcfce7;
+    --blue:#1d4ed8; --blue-soft:#dbeafe; --violet:#6d28d9; --violet-soft:#ede9fe;
+    --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.1);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0f1216; --panel:#171b21; --border:#262c34; --text:#e8eaed; --muted:#9aa4b2;
+    --accent:#ff5a70; --accent-soft:#2a1419; --amber:#fbbf24; --amber-soft:#2e2410;
+    --slate:#cbd5e1; --slate-soft:#1e242c; --green:#4ade80; --green-soft:#10251a;
+    --blue:#93b4fd; --blue-soft:#16233d; --violet:#c4b5fd; --violet-soft:#241b3d;
+    --shadow:none;}}
+  /* Explicit dark-mode toggle (data-theme="dark") — separate from the OS-preference media
+     query above, so a viewer's manual theme choice wins in both directions, not just when
+     it agrees with the OS. Same token values as the media-query block. */
+  :root[data-theme="dark"] {
+    --bg:#0f1216; --panel:#171b21; --border:#262c34; --text:#e8eaed; --muted:#9aa4b2;
+    --accent:#ff5a70; --accent-soft:#2a1419; --amber:#fbbf24; --amber-soft:#2e2410;
+    --slate:#cbd5e1; --slate-soft:#1e242c; --green:#4ade80; --green-soft:#10251a;
+    --blue:#93b4fd; --blue-soft:#16233d; --violet:#c4b5fd; --violet-soft:#241b3d;
+    --shadow:none;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  header{padding:18px 24px 14px;border-bottom:1px solid var(--border);background:var(--panel)}
+  h1{margin:0 0 4px;font-size:19px;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:12.5px}
+  main{padding:18px 24px 60px;max-width:1550px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:12px;margin-bottom:18px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px;
+    cursor:pointer;text-align:left;box-shadow:var(--shadow);color:inherit;font:inherit;
+    transition:border-color .12s,transform .12s}
+  .card:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .card[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+  .card .n{font-size:27px;font-weight:650;letter-spacing:-.02em}
+  .card .l{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .card .h{color:var(--muted);font-size:11.5px;margin-top:6px;line-height:1.35}
+  .tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border)}
+  .tab{padding:8px 14px;border:none;background:none;color:var(--muted);cursor:pointer;
+    border-bottom:2px solid transparent;font:inherit;font-weight:550}
+  .tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  select,input[type=search],button{font:inherit;padding:7px 10px;border-radius:7px;
+    border:1px solid var(--border);background:var(--panel);color:var(--text)}
+  input[type=search]{min-width:250px}
+  button{cursor:pointer}
+  .tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--border);
+    border-radius:10px;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;min-width:1180px}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  th{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
+    font-weight:600;white-space:nowrap;cursor:pointer;user-select:none}
+  th:hover{color:var(--accent)}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:var(--slate-soft)}
+  .subj{font-weight:550;max-width:360px}
+  .desc{color:var(--muted);font-size:12px;margin-top:3px;max-width:360px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .nowrap{white-space:nowrap}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .rid{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--muted)}
+  .badge{display:inline-block;padding:1.5px 7px;border-radius:20px;font-size:11px;
+    font-weight:600;margin:1px 3px 1px 0;white-space:nowrap}
+  .b-over{background:var(--accent-soft);color:var(--accent)}
+  .b-never{background:var(--amber-soft);color:var(--amber)}
+  .b-stale{background:var(--slate-soft);color:var(--slate)}
+  .b-nodue{background:var(--slate-soft);color:var(--slate)}
+  .b-bad{background:var(--amber-soft);color:var(--amber)}
+  .b-done{background:var(--green-soft);color:var(--green)}
+  .t-must{background:var(--accent);color:#fff}
+  .t-hyper{background:var(--violet-soft);color:var(--violet)}
+  .t-strat{background:var(--blue-soft);color:var(--blue)}
+  .empty{padding:40px;text-align:center;color:var(--muted)}
+  .note{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);
+    border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:var(--muted)}
+  .note b{color:var(--text)}
+  .bar{height:6px;background:var(--slate-soft);border-radius:3px;overflow:hidden;min-width:60px}
+  .bar>i{display:block;height:100%;background:var(--accent)}
+  .pager{display:flex;gap:10px;align-items:center;justify-content:flex-end;
+    padding:10px 4px 0;color:var(--muted);font-size:13px;flex-wrap:wrap}
+  .pager button{padding:5px 11px}
+  .pager button:disabled{opacity:.4;cursor:default}
+  /* --- tag groups (Hypercare / Strategic, Must Win) --- */
+  .tag-group{margin-bottom:22px}
+  .tag-group-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .tag-group-count{color:var(--muted);font-size:12.5px}
+  /* --- opportunity cards --- */
+  .opp{background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    box-shadow:var(--shadow);padding:16px 20px;margin-bottom:12px}
+  .opp-head{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+  .opp-title{font-size:16px;font-weight:650;letter-spacing:-.01em;flex:1 1 320px}
+  .opp-title .oid{font-weight:400;color:var(--muted);font-size:13px;margin-left:6px}
+  .opp-tags{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+  .opp-money{text-align:right;padding-left:16px;border-left:1px solid var(--border);min-width:150px}
+  .opp-money .big{font-size:19px;font-weight:650;color:var(--blue);letter-spacing:-.02em}
+  .opp-money .small{font-size:11.5px;color:var(--muted)}
+  .opp-meta{margin-top:8px;padding-bottom:10px;border-bottom:1px solid var(--border);
+    color:var(--muted);font-size:13px;display:flex;gap:20px;flex-wrap:wrap}
+  .opp-meta b{color:var(--text);font-weight:600}
+  .opp-tasks{margin-top:10px}
+  .opp-tasks h4{margin:0 0 8px;font-size:11.5px;letter-spacing:.05em;color:var(--muted);
+    text-transform:uppercase;font-weight:600}
+  .tk{display:flex;gap:12px;padding:5px 0 5px 10px;border-left:2px solid var(--border)}
+  .tk.od{border-left-color:var(--accent)}
+  .tk-date{min-width:88px;font-weight:600;font-size:12.5px;white-space:nowrap}
+  .tk-date.none{color:var(--muted);font-weight:400}
+  .tk-body{flex:1;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .tk-text{flex:1;min-width:0}
+  .tk-sub{font-size:13.5px}
+  .tk-meta{color:var(--muted);font-size:11.5px;margin-top:1px}
+  /* --- Delete Yes/No toggle --- */
+  .del-toggle{padding:3px 11px;border-radius:20px;border:1px solid var(--border);
+    background:var(--panel);color:var(--muted);font:inherit;font-size:11.5px;font-weight:700;
+    letter-spacing:.02em;cursor:pointer;min-width:46px;flex:0 0 auto}
+  .del-toggle:hover{border-color:var(--accent)}
+  .del-toggle.yes{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+  .del-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Laporan Progress Task — Tim Indonesia</h1>
+  <div class="sub" id="meta"></div>
+</header>
+
+<main>
+  <div class="note" id="note"></div>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="tabs">
+    <button class="tab" data-view="tasks" aria-selected="true">Daftar Task</button>
+    <button class="tab" data-view="alex" aria-selected="false">Alex Direction</button>
+    <button class="tab" data-view="hs" aria-selected="false">Hypercare / Strategic</button>
+    <button class="tab" data-view="mustwin" aria-selected="false">Must Win</button>
+    <button class="tab" data-view="creators" aria-selected="false">Rekap per Pembuat</button>
+  </div>
+
+  <div class="controls" id="controls">
+    <select id="creator"><option value="">Semua pembuat</option></select>
+    <select id="owner"><option value="">Semua owner</option></select>
+    <select id="manager"><option value="">Semua manager</option></select>
+    <select id="status">
+      <option value="open" selected>Hanya yang belum selesai</option>
+      <option value="all">Semua status</option>
+      <option value="Completed">Hanya Completed</option>
+    </select>
+    <input type="search" id="q" placeholder="Cari subjek, deskripsi, klien…">
+    <select id="pageSize">
+      <option value="25">25 / halaman</option>
+      <option value="50" selected>50 / halaman</option>
+      <option value="100">100 / halaman</option>
+    </select>
+    <button id="csv">Ekspor CSV</button>
+    <button id="reset">Reset filter</button>
+  </div>
+
+  <div id="view"></div>
+  <div class="pager" id="pager"></div>
+</main>
+
+<script>
+const DATA = "__DATA__";
+const TASKS = DATA.tasks, OPPS = DATA.opportunities;
+const STALE_DAYS = __STALEDAYS__;
+const state = { bucket:null, view:"tasks", creator:"", owner:"", manager:"", status:"open", q:"",
+                sort:"daysSinceTouch", dir:-1, page:1, pageSize:50 };
+
+// --- "Delete Yes/No" marks ---------------------------------------------------------
+// This report has no backend, so a mark is not shared between viewers or guaranteed to
+// survive a reload — it's a scratch layer over the static data, best-effort persisted to
+// this browser's localStorage (keyed by task id, so it survives a rebuilt/reopened report
+// as long as task ids stay stable, which they do). The one guaranteed path is: mark, then
+// Ekspor CSV — the export always reflects whatever's marked at that moment.
+const DELETE_MARKS_KEY = "taskProgressMonitor.deleteMarks.v1";
+function loadDeleteMarks() {
+  try {
+    const raw = localStorage.getItem(DELETE_MARKS_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+const deleteMarks = loadDeleteMarks();
+function saveDeleteMarks() {
+  try { localStorage.setItem(DELETE_MARKS_KEY, JSON.stringify([...deleteMarks])); } catch {}
+}
+function isMarkedDelete(id) { return deleteMarks.has(String(id)); }
+function toggleDelete(id) {
+  const k = String(id);
+  if (deleteMarks.has(k)) deleteMarks.delete(k); else deleteMarks.add(k);
+  saveDeleteMarks();
+  render();
+}
+function deleteToggleHtml(id) {
+  const marked = isMarkedDelete(id);
+  return `<button type="button" class="del-toggle ${marked?"yes":""}" data-del-id="${id}"
+            aria-pressed="${marked}" title="Tandai untuk dihapus dari CRM">${marked?"Yes":"No"}</button>`;
+}
+// Event delegation on the one container that survives every render — attaching a listener
+// per button would break the moment innerHTML gets replaced. Uses querySelector directly
+// since `$` isn't defined yet at this point in the script.
+document.querySelector("#view").addEventListener("click", e => {
+  const btn = e.target.closest("[data-del-id]");
+  if (btn) toggleDelete(btn.dataset.delId);
+});
+
+const CARDS = [
+  { key:"neverUpdated", label:"Belum pernah di-update", hint:"Tidak ada perubahan sejak task dibuat" },
+  { key:"overdue",      label:"Overdue",                hint:"Due date lewat & masuk akal, belum Completed" },
+  { key:"noDueDate",    label:"Tanpa due date",         hint:"Task terbuka yang belum punya tenggat" },
+  { key:"badDueDate",   label:"Due date janggal",       hint:"Due date lebih awal dari tanggal dibuat" },
+  { key:"stale",        label:"Stale",                  hint:"Pernah di-update, mandek > "+STALE_DAYS+" hari" },
+];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function money(v, cur) {
+  if (v == null) return "—";
+  const p = cur === "IDR" ? "Rp " : (cur ? cur + " " : "");
+  if (Math.abs(v) >= 1e9) return p + (v/1e9).toFixed(1) + "B";
+  if (Math.abs(v) >= 1e6) return p + (v/1e6).toFixed(1) + "M";
+  if (Math.abs(v) >= 1e3) return p + (v/1e3).toFixed(0) + "K";
+  return p + v;
+}
+
+// ------------------------------------------------------------------ task table
+
+function filtered() {
+  // "Alex Direction" replicates the CRM habit of filtering by "subject contains Alex
+  // Direction" — same table/controls as Daftar Task, just a pre-narrowed base list.
+  let r = state.view === "alex"
+    ? TASKS.filter(t => (t.subject||"").toLowerCase().includes("alex direction"))
+    : TASKS;
+  if (state.status === "open") r = r.filter(t => t.isOpen);
+  else if (state.status === "Completed") r = r.filter(t => !t.isOpen);
+  if (state.bucket) r = r.filter(t => t[state.bucket]);
+  if (state.creator) r = r.filter(t => t.creatorId === state.creator);
+  if (state.owner) r = r.filter(t => t.owner === state.owner);
+  if (state.manager) r = r.filter(t => t.manager === state.manager);
+  if (state.q) {
+    const n = state.q.toLowerCase();
+    r = r.filter(t => (t.subject||"").toLowerCase().includes(n)
+                   || (t.description||"").toLowerCase().includes(n)
+                   || String(t.id).includes(n));
+  }
+  const k = state.sort, d = state.dir;
+  return r.slice().sort((a,b) => {
+    const x = a[k], y = b[k];
+    // Empty values always sink to the bottom, whichever way the column is sorted —
+    // a task with no due date is not "the earliest due date".
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;
+    if (y == null) return -1;
+    if (typeof x === "string" || typeof y === "string") return d * String(x).localeCompare(String(y));
+    return d * (x - y);
+  });
+}
+
+function badges(t) {
+  if (!t.isOpen) return `<span class="badge b-done">Completed</span>`;
+  let o = "";
+  if (t.overdue)      o += `<span class="badge b-over">Overdue ${t.daysOverdue}h</span>`;
+  if (t.badDueDate)   o += `<span class="badge b-bad">Due date janggal</span>`;
+  if (t.neverUpdated) o += `<span class="badge b-never">Belum di-update</span>`;
+  if (t.stale)        o += `<span class="badge b-stale">Stale ${t.daysSinceTouch}h</span>`;
+  if (t.noDueDate)    o += `<span class="badge b-nodue">Tanpa due date</span>`;
+  return o || "—";
+}
+
+function taskTagChips(t) {
+  let o = "";
+  if (t.mustWin)   o += tagChip("MUST WIN");
+  if (t.hypercare) o += tagChip("HYPERCARE");
+  if (t.strategic) o += tagChip("STRATEGIC");
+  return o;
+}
+
+const COLS = [
+  ["id","ID"], ["subject","Subjek"], ["creator","Pembuat"], ["owner","Owner"],
+  ["manager","Manager"], ["assignedTo","Assigned to"], ["status","Status"], ["dueAt","Due date"],
+  ["daysSinceTouch","Umur update"], [null,"Tag"], [null,"Tanda"], [null,"Delete Yes / No"],
+];
+
+function renderTasks() {
+  const all = filtered();
+  const pages = Math.max(1, Math.ceil(all.length / state.pageSize));
+  if (state.page > pages) state.page = pages;
+  const start = (state.page - 1) * state.pageSize;
+  const rows = all.slice(start, start + state.pageSize);
+
+  if (!all.length) {
+    $("#view").innerHTML = `<div class="tablewrap"><div class="empty">Tidak ada task yang cocok.</div></div>`;
+    $("#pager").innerHTML = ""; return;
+  }
+  $("#view").innerHTML = `<div class="tablewrap"><table><thead><tr>${
+    COLS.map(([k,l]) => `<th ${k?`data-k="${k}"`:""}>${l}${state.sort===k?(state.dir>0?" ▲":" ▼"):""}</th>`).join("")
+  }</tr></thead><tbody>${rows.map(t => `
+    <tr>
+      <td class="rid nowrap">${t.id}</td>
+      <td><div class="subj">${esc(t.subject)||"(tanpa subjek)"}</div>
+          ${t.description?`<div class="desc">${esc(t.description)}</div>`:""}</td>
+      <td class="nowrap">${esc(t.creator)}</td>
+      <td class="nowrap">${esc(t.owner)}</td>
+      <td class="nowrap">${esc(t.manager)}</td>
+      <td class="nowrap">${t.assignedTo ? esc(t.assignedTo) : "—"}</td>
+      <td class="nowrap">${esc(t.status)}</td>
+      <td class="nowrap">${t.dueAt || "—"}</td>
+      <td class="nowrap num">${t.daysSinceTouch != null ? t.daysSinceTouch+" hari" : "—"}</td>
+      <td class="nowrap">${taskTagChips(t) || "—"}</td>
+      <td>${badges(t)}</td>
+      <td class="nowrap">${deleteToggleHtml(t.id)}</td>
+    </tr>`).join("")}</tbody></table></div>`;
+
+  $("#view").querySelectorAll("th[data-k]").forEach(th => th.onclick = () => {
+    const k = th.dataset.k;
+    if (state.sort === k) state.dir *= -1; else { state.sort = k; state.dir = -1; }
+    render();
+  });
+  renderPager(all.length, pages, start, rows.length);
+}
+
+function renderPager(total, pages, start, shown) {
+  $("#pager").innerHTML = `
+    <span>Menampilkan ${start+1}–${start+shown} dari ${total}</span>
+    <button id="pPrev" ${state.page<=1?"disabled":""}>← Sebelumnya</button>
+    <span>Hal. ${state.page} / ${pages}</span>
+    <button id="pNext" ${state.page>=pages?"disabled":""}>Berikutnya →</button>`;
+  const prev = $("#pPrev"), next = $("#pNext");
+  if (prev) prev.onclick = () => { state.page--; render(); window.scrollTo({top:0,behavior:"smooth"}); };
+  if (next) next.onclick = () => { state.page++; render(); window.scrollTo({top:0,behavior:"smooth"}); };
+}
+
+// ---------------------------------------------------------- opportunity cards
+
+// Same severity order used everywhere a priority list needs sorting: worst-overdue first,
+// then busiest.
+function sortBySeverity(list) {
+  return list.slice().sort((a,b) => (b.overdueCount - a.overdueCount) || (b.taskCount - a.taskCount));
+}
+
+// Bucket-card filter + search box, shared by both priority tabs.
+function applyCommonFilters(list) {
+  let r = list;
+  if (state.bucket) r = r.filter(o => o.tasks.some(t => t[state.bucket]));
+  // Owner/Manager describe the opportunity's own deal owner, not each nested task — a
+  // sales manager filtering by name expects "opportunities I/my rep own", matching what
+  // the card itself displays ("Owner: <b>...</b>").
+  if (state.owner) r = r.filter(o => o.owner === state.owner);
+  if (state.manager) r = r.filter(o => o.manager === state.manager);
+  if (state.q) {
+    const n = state.q.toLowerCase();
+    r = r.filter(o => (o.name||"").toLowerCase().includes(n)
+                   || (o.account||"").toLowerCase().includes(n)
+                   || (o.owner||"").toLowerCase().includes(n)
+                   || String(o.id).includes(n)
+                   || o.tasks.some(t => (t.subject||"").toLowerCase().includes(n)));
+  }
+  return r;
+}
+
+function tagChip(t) {
+  const cls = t === "MUST WIN" ? "t-must" : t === "HYPERCARE" ? "t-hyper" : "t-strat";
+  return `<span class="badge ${cls}">${t}</span>`;
+}
+
+function oppCardHtml(o) {
+  return `
+    <section class="opp">
+      <div class="opp-head">
+        <div class="opp-title">${esc(o.name)||"(tanpa nama)"}<span class="oid">#${o.id}</span></div>
+        <div class="opp-tags">${(o.tags||[]).map(tagChip).join("")}</div>
+        <div class="opp-money">
+          <div class="big">${money(o.revenue, o.currency)}</div>
+          ${o.potential!=null?`<div class="small">potential ${money(o.potential,o.currency)}</div>`:""}
+          ${o.expClose?`<div class="small">Exp ${esc(o.expClose)}</div>`:""}
+        </div>
+      </div>
+      <div class="opp-meta">
+        ${o.product?`<span>Product: <b>${esc(o.product)}</b></span>`:""}
+        <span>Stage: <b>${esc(o.stage)}</b></span>
+        <span>Revenue: <b>${money(o.revenue,o.currency)}/mth</b></span>
+        <span>Owner: <b>${esc(o.owner)}</b></span>
+      </div>
+      <div class="opp-tasks">
+        <h4>Tasks (${o.taskCount})</h4>
+        ${o.tasks.map(t => `
+          <div class="tk ${t.overdue?"od":""}">
+            <div class="tk-date ${t.dueAt?"":"none"}">${t.dueAt || "tanpa due"}</div>
+            <div class="tk-body">
+              <div class="tk-text">
+                <div class="tk-sub">${esc(t.subject)||"(tanpa subjek)"}
+                  <span style="color:var(--muted)">(${esc(t.status)})</span></div>
+                <div class="tk-meta">#${t.id} · owner ${esc(t.owner)}${t.assignedTo?` · assigned ${esc(t.assignedTo)}`:""}
+                  ${t.overdue?` · <span style="color:var(--accent)">overdue</span>`:""}
+                  ${t.badDueDate?` · <span style="color:var(--amber)">due date janggal</span>`:""}
+                  ${t.neverUpdated?` · belum di-update`:""}</div>
+              </div>
+              ${deleteToggleHtml(t.id)}
+            </div>
+          </div>`).join("")}
+      </div>
+    </section>`;
+}
+
+// Tab 1: everything tagged HYPERCARE or STRATEGIC. Hypercare-tagged opportunities sit in
+// the top block regardless of whether they're also Strategic (their chips show both);
+// the bottom block is what's left — Strategic-only, no Hypercare.
+function renderHypercareStrategic() {
+  const scope = applyCommonFilters(
+    OPPS.filter(o => o.tags.includes("HYPERCARE") || o.tags.includes("STRATEGIC")));
+  if (!scope.length) {
+    $("#view").innerHTML = `<div class="tablewrap"><div class="empty">Tidak ada opportunity bertag Hypercare/Strategic yang cocok.</div></div>`;
+    $("#pager").innerHTML = ""; return;
+  }
+  const top  = sortBySeverity(scope.filter(o => o.tags.includes("HYPERCARE")));
+  const rest = sortBySeverity(scope.filter(o => !o.tags.includes("HYPERCARE")));
+  const block = (label, group) => !group.length ? "" : `
+    <div class="tag-group">
+      <div class="tag-group-head">${tagChip(label)}<span class="tag-group-count">${group.length} opportunity</span></div>
+      ${group.map(oppCardHtml).join("")}
+    </div>`;
+  $("#view").innerHTML = block("HYPERCARE", top) + block("STRATEGIC", rest);
+  $("#pager").innerHTML = "";
+}
+
+// Tab 2: everything tagged MUST WIN, flat — no sub-grouping. Cards still show whichever
+// other tags (Hypercare/Strategic) an opportunity happens to also carry.
+function renderMustWin() {
+  const scope = sortBySeverity(applyCommonFilters(OPPS.filter(o => o.tags.includes("MUST WIN"))));
+  if (!scope.length) {
+    $("#view").innerHTML = `<div class="tablewrap"><div class="empty">Tidak ada opportunity bertag Must Win yang cocok.</div></div>`;
+    $("#pager").innerHTML = ""; return;
+  }
+  $("#view").innerHTML = scope.map(oppCardHtml).join("");
+  $("#pager").innerHTML = "";
+}
+
+// ------------------------------------------------------------------ creators
+
+function renderCreators() {
+  const open = TASKS.filter(t => t.isOpen);
+  const map = new Map();
+  for (const t of open) {
+    if (!map.has(t.creatorId)) map.set(t.creatorId,
+      { name:t.creator, id:t.creatorId, open:0, neverUpdated:0, stale:0, overdue:0, noDueDate:0, badDueDate:0 });
+    const e = map.get(t.creatorId);
+    e.open++;
+    for (const k of ["neverUpdated","stale","overdue","noDueDate","badDueDate"]) if (t[k]) e[k]++;
+  }
+  const rows = [...map.values()].sort((a,b) =>
+    (b.overdue+b.neverUpdated) - (a.overdue+a.neverUpdated) || b.open - a.open);
+  const max = Math.max(...rows.map(r => r.open), 1);
+  $("#view").innerHTML = `<div class="tablewrap"><table style="min-width:820px"><thead><tr>
+      <th>Pembuat</th><th>Task terbuka</th><th>Belum di-update</th><th>Overdue</th>
+      <th>Tanpa due date</th><th>Due date janggal</th><th>Stale</th></tr></thead><tbody>${
+    rows.map(r => `<tr>
+      <td>${esc(r.name)}</td>
+      <td><div style="display:flex;gap:8px;align-items:center">
+            <span class="num" style="min-width:26px">${r.open}</span>
+            <span class="bar"><i style="width:${(r.open/max*100).toFixed(1)}%"></i></span></div></td>
+      <td class="num">${r.neverUpdated}</td><td class="num">${r.overdue}</td>
+      <td class="num">${r.noDueDate}</td><td class="num">${r.badDueDate}</td>
+      <td class="num">${r.stale}</td>
+    </tr>`).join("")}</tbody></table></div>`;
+  $("#pager").innerHTML = "";
+}
+
+// --------------------------------------------------------------------- shell
+
+function renderCards() {
+  const base = TASKS.filter(t => t.isOpen);
+  $("#cards").innerHTML = CARDS.map(c => `
+    <button class="card" data-b="${c.key}" aria-pressed="${state.bucket===c.key}">
+      <div class="n">${base.filter(t=>t[c.key]).length}</div>
+      <div class="l">${c.label}</div><div class="h">${c.hint}</div>
+    </button>`).join("");
+  $("#cards").querySelectorAll(".card").forEach(el => el.onclick = () => {
+    state.bucket = state.bucket === el.dataset.b ? null : el.dataset.b;
+    state.page = 1; renderCards(); render();
+  });
+}
+
+function render() {
+  const open = TASKS.filter(t=>t.isOpen).length;
+  $("#meta").textContent =
+    `${TASKS.length} task native · ${open} belum selesai · ${OPPS.length} opportunity aktif · `
+    + `${new Set(TASKS.map(t=>t.creatorId)).size} pembuat · data per __GENERATED__ WIB`;
+  // Creator/status/CSV/pagination only make sense on the flat-table views (Daftar Task,
+  // Alex Direction) — "creator" isn't a concept an Opportunity card has, status is already
+  // implied (open-stage only), and card lists are unpaginated by design. Owner/Manager,
+  // though, are exactly what a sales manager filters by everywhere — cards carry both
+  // fields too (matching the opportunity's own deal owner), so keep those two visible on
+  // the Hypercare/Strategic and Must Win tabs as well.
+  const isTasks = state.view === "tasks" || state.view === "alex";
+  const showOwnerManager = isTasks || state.view === "hs" || state.view === "mustwin";
+  $("#creator").style.display  = isTasks ? "" : "none";
+  $("#owner").style.display    = showOwnerManager ? "" : "none";
+  $("#manager").style.display  = showOwnerManager ? "" : "none";
+  $("#status").style.display   = isTasks ? "" : "none";
+  $("#csv").style.display      = isTasks ? "" : "none";
+  $("#pageSize").style.display = isTasks ? "" : "none";
+  if (isTasks) renderTasks();
+  else if (state.view === "hs") renderHypercareStrategic();
+  else if (state.view === "mustwin") renderMustWin();
+  else renderCreators();
+}
+
+function initCreators() {
+  const m = new Map();
+  for (const t of TASKS.filter(t=>t.isOpen)) m.set(t.creatorId, (m.get(t.creatorId)||0)+1);
+  const names = new Map(TASKS.map(t => [t.creatorId, t.creator]));
+  $("#creator").innerHTML = `<option value="">Semua pembuat</option>` +
+    [...m.entries()].sort((a,b)=>b[1]-a[1])
+      .map(([id,c]) => `<option value="${esc(id)}">${esc(names.get(id))} (${c})</option>`).join("");
+}
+
+function initOwners() {
+  // Owner is the person a sales manager actually cares about filtering by — it's who the
+  // task belongs to, not necessarily who logged it (creator).
+  const m = new Map();
+  for (const t of TASKS.filter(t=>t.isOpen)) m.set(t.owner, (m.get(t.owner)||0)+1);
+  $("#owner").innerHTML = `<option value="">Semua owner</option>` +
+    [...m.entries()].sort((a,b)=>b[1]-a[1])
+      .map(([name,c]) => `<option value="${esc(name)}">${esc(name)} (${c})</option>`).join("");
+}
+
+function initManagers() {
+  const m = new Map();
+  for (const t of TASKS.filter(t=>t.isOpen)) m.set(t.manager, (m.get(t.manager)||0)+1);
+  // "Tanpa Manager" sinks to the bottom of the list regardless of count — it's a catch-all,
+  // not a real manager, so it shouldn't compete for the top spot by volume.
+  $("#manager").innerHTML = `<option value="">Semua manager</option>` +
+    [...m.entries()].sort((a,b) => (a[0]==="Tanpa Manager") - (b[0]==="Tanpa Manager") || b[1]-a[1])
+      .map(([name,c]) => `<option value="${esc(name)}">${esc(name)} (${c})</option>`).join("");
+}
+
+$("#note").innerHTML =
+  `<b>Cakupan:</b> task CRM-native tim Indonesia (<code>record_type_id=100</code>, <code>task_type=Task</code>).
+   Tidak termasuk 233.142 record warisan Salesforce (ber-<code>sf_id</code>) maupun 15 record <code>Note</code>.
+   Tab <b>Alex Direction</b> menyaring subjek yang mengandung teks itu (sama seperti filter
+   "subject contains" di CRM) — kolom dan kontrolnya sama persis dengan Daftar Task.
+   Tab <b>Hypercare / Strategic</b> memuat opportunity ber-stage terbuka yang bertag salah
+   satu dari keduanya — bertag Hypercare (termasuk yang juga Strategic) selalu di blok atas,
+   sisanya (Strategic saja) di blok bawah. Tab <b>Must Win</b> memuat opportunity bertag
+   Must Win sebagai daftar datar, tetap menampilkan chip Hypercare/Strategic kalau ada.
+   Kedua tab hanya menampilkan task yang belum selesai.
+   <b>Stale</b> = update terakhir lebih dari ${STALE_DAYS} hari lalu; task yang belum pernah disentuh
+   dihitung terpisah agar tidak dobel. <b>Due date janggal</b> = due date lebih awal dari tanggal dibuat
+   (banyak yang meleset persis 730 hari — tahun tertulis 2024 alih-alih 2026); dikeluarkan dari Overdue.
+   Tag <b>MUST WIN</b> dari <code>lead_source_detail</code>; <b>HYPERCARE</b>/<b>STRATEGIC</b> dari kolom
+   Customer Success Manager pada parent account. <b>Manager</b> diambil dari sheet ID-User Master
+   (tab List, kolom ASM) berdasarkan nama Owner task — hanya mencakup sebagian Owner
+   (yang tidak ada di roster tampil sebagai "Tanpa Manager"). Semua perhitungan memakai
+   zona waktu Asia/Jakarta.
+   <br><br><b>Delete Yes / No</b> di tiap tab bisa diklik untuk menandai task; tanda ini
+   tersimpan di browser Anda saja (bukan disinkronkan antar-orang), jadi cara paling pasti
+   untuk meneruskan hasil tandaan adalah: tandai, lalu <b>Ekspor CSV</b> — kolom
+   <code>delete_yes_no</code> ikut terbawa.`;
+
+document.querySelectorAll(".tab").forEach(tab => tab.onclick = () => {
+  state.view = tab.dataset.view; state.page = 1;
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", String(t===tab)));
+  render();
+});
+$("#creator").onchange  = e => { state.creator = e.target.value; state.page = 1; render(); };
+$("#owner").onchange    = e => { state.owner   = e.target.value; state.page = 1; render(); };
+$("#manager").onchange  = e => { state.manager = e.target.value; state.page = 1; render(); };
+$("#status").onchange   = e => { state.status  = e.target.value; state.page = 1; render(); };
+$("#pageSize").onchange = e => { state.pageSize = +e.target.value; state.page = 1; render(); };
+let timer;
+$("#q").oninput = e => { clearTimeout(timer); state.q = e.target.value; state.page = 1;
+                         timer = setTimeout(render, 200); };
+$("#reset").onclick = () => {
+  Object.assign(state, { bucket:null, creator:"", owner:"", manager:"", status:"open", q:"", page:1 });
+  $("#creator").value = ""; $("#owner").value = ""; $("#manager").value = ""; $("#status").value = "open"; $("#q").value = "";
+  renderCards(); render();
+};
+// `claude` only exists inside the published Artifact viewer, never on a local file:// page,
+// so referencing it there throws — caught here and treated the same as "not granted".
+// Never probe `window.claude` members directly; branch on what use() resolves.
+async function getDownloads() {
+  try { return await claude.use("downloads"); } catch { return null; }
+}
+
+$("#csv").onclick = async () => {
+  const rows = filtered();
+  const head = ["id","subjek","pembuat","owner","manager","assigned_to","status","due_date","hari_overdue",
+                "hari_sejak_update","belum_diupdate","stale","overdue","tanpa_due_date",
+                "due_date_janggal","must_win","hypercare","strategic","dibuat",
+                "related_type","related_id","delete_yes_no"];
+  const cell = v => `"${String(v ?? "").replace(/"/g,'""').replace(/\r?\n/g," ")}"`;
+  const csv = [head.join(",")].concat(rows.map(t => [
+    t.id, t.subject, t.creator, t.owner, t.manager, t.assignedTo ?? "", t.status, t.dueAt ?? "",
+    t.daysOverdue ?? "", t.daysSinceTouch ?? "", t.neverUpdated, t.stale, t.overdue,
+    t.noDueDate, t.badDueDate, t.mustWin, t.hypercare, t.strategic,
+    t.createdAt ?? "", t.relatedType ?? "", t.relatedId ?? "",
+    isMarkedDelete(t.id) ? "Yes" : "No"
+  ].map(cell).join(","))).join("\r\n");
+  const text = "﻿" + csv;
+
+  const downloads = await getDownloads();
+  if (downloads) {
+    // Published Artifact view: hand the file to the viewer instead of a direct download,
+    // which the sandbox blocks silently. .csv needs the extended allowlist; fall back to
+    // .txt (same content) if that's not enabled for this view, rather than failing quietly.
+    try { await downloads.save({ filename: "task-indonesia.csv", data: text }); }
+    catch (err) {
+      if (err && err.code === "extension_not_enabled") {
+        try { await downloads.save({ filename: "task-indonesia.txt", data: text }); }
+        catch {}
+      } else if (err && err.code !== "declined") {
+        console.error("CSV export failed:", err);
+      }
+    }
+    return;
+  }
+
+  // Local file:// page — no `claude` runtime, so a plain browser download works directly.
+  const url = URL.createObjectURL(new Blob([text], { type:"text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = "task-indonesia.csv"; a.click();
+  URL.revokeObjectURL(url);
+};
+
+initCreators(); initOwners(); initManagers(); renderCards(); render();
+</script>
+</body>
+</html>

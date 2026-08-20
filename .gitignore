@@ -1,0 +1,28 @@
+# Secrets — never commit real values. backend/.env.example is the template that's safe
+# to commit; backend/.env holds this machine's real CRM_API_KEY etc.
+backend/.env
+
+# Local SQLite verification DB (pre-Substrait; the deployed app uses OceanBase instead)
+data/
+
+# Real employee roster export (names + emails) — internal PII, never goes to git.
+tools/manager_roster.csv
+
+# Static HTML reports with real CRM task data baked in (client names, deal subjects) —
+# these are personal deliverables generated from live data, not app source.
+Laporan-Task-Indonesia.html
+Laporan-Task-Indonesia-artifact.html
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+
+# Substrait project link (per-machine, no secret, but not something to share via git)
+.substrait/

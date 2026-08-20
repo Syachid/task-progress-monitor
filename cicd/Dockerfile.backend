@@ -1,0 +1,15 @@
+# Backend image for Substrait. Built from the REPO ROOT, so COPY paths are
+# repo-relative (COPY backend/...). This app has no separate frontend/ — main.py serves
+# static/index.html itself (STATIC_DIR = .../main.py's parent.parent / "static"), so the
+# static/ folder is copied to /static to sit next to /app the way that path expects.
+FROM python:3.12-slim
+WORKDIR /app
+COPY backend/requirements.txt .
+# Wheels-only: never fall back to a source build. This slim image has no C compiler, so
+# a dep with no wheel for this Python would otherwise die deep in a cryptic gcc/compile
+# failure — --only-binary makes that fail fast and legibly instead.
+RUN pip install --no-cache-dir --only-binary=:all: -r requirements.txt
+COPY backend/ .
+COPY static/ /static
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
