@@ -536,7 +536,16 @@ async function loadFilterOptions() {
 const VIEWS = { tasks: renderTasks, alex: renderAlex, hs: renderHypercareStrategic, mustwin: renderMustWin, creators: renderCreators };
 function render() { return VIEWS[state.view](); }
 
-async function refreshAll() { await loadSummary(); await loadViewerScope(); await loadFilterOptions(); await render(); }
+async function refreshAll() {
+  // Each loader can 502 (HTML body, not JSON) if the platform's SSO proxy times out
+  // waiting on a slow backend — e.g. right after kicking off a CRM sync. Run them
+  // independently so one transient failure doesn't leave the whole dashboard stuck on
+  // stale data; render() still runs with whatever state we did manage to load.
+  const results = await Promise.allSettled([loadSummary(), loadViewerScope(), loadFilterOptions()]);
+  const failed = results.some((r) => r.status === "rejected");
+  if (failed) showError("Some dashboard data failed to refresh — retry Sync from CRM if this persists.");
+  await render();
+}
 
 document.querySelectorAll(".tab").forEach((tab) => {
   tab.onclick = () => {
