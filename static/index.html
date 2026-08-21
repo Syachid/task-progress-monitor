@@ -544,20 +544,30 @@ async function loadAll() {
 }
 
 async function refreshAll() {
+  if (await loadAll()) showError("Some dashboard data failed to refresh — retry Sync from CRM if this persists.");
+  else hideError();
+}
+
+async function currentLastSyncAt() {
+  const r = await fetch("/api/summary?stale_days=" + state.staleDays, { cache: "no-store" });
+  return (await r.json()).last_sync_at;
+}
+
+async function waitForFreshSyncThenRefresh(before) {
   // Right after a CRM sync, the backend can be busy enough that the platform's SSO
-  // proxy 502s (HTML body, not JSON) for a few seconds across every endpoint — not
-  // just /api/sync. Confirmed live: retrying shortly after clears it every time. One
-  // silent retry covers that window; only surface an error if it's still failing.
-  if (await loadAll()) {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    if (await loadAll()) {
-      showError("Some dashboard data failed to refresh — retry Sync from CRM if this persists.");
-    } else {
-      hideError();
-    }
-  } else {
-    hideError();
+  // proxy 502s across every /api endpoint for several seconds (not just /api/sync) —
+  // and even once it stops erroring, a read can still briefly come back with the old
+  // last_sync_at (confirmed live: a plain refreshAll() right after sync can land a
+  // stale-but-200 response with no error at all). Poll until last_sync_at actually
+  // moves before doing the real refresh, instead of trusting the first response.
+  for (let i = 0; i < 10; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    try {
+      const now = await currentLastSyncAt();
+      if (now && now !== before) break;
+    } catch { /* transient 502 — keep polling */ }
   }
+  await refreshAll();
 }
 
 document.querySelectorAll(".tab").forEach((tab) => {
@@ -581,6 +591,7 @@ $("#q").oninput = (e) => { clearTimeout(timer); state.q = e.target.value; state.
 
 $("#refresh").onclick = async (e) => {
   e.target.disabled = true; e.target.textContent = "Syncing…";
+  const before = await currentLastSyncAt().catch(() => null);
   try {
     const r = await fetch("/api/sync", { method: "POST" });
     if (!r.ok) {
@@ -594,7 +605,7 @@ $("#refresh").onclick = async (e) => {
   } catch (e) {
     showError("Sync failed: " + e.message);
   } finally {
-    await refreshAll();
+    await waitForFreshSyncThenRefresh(before);
     e.target.disabled = false; e.target.textContent = "Sync from CRM";
   }
 };
