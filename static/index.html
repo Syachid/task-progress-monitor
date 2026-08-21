@@ -324,11 +324,11 @@ function badges(f) {
   return out || "—";
 }
 
-// crm_link is the same Opportunity deep link already surfaced as "Open in CRM" — this
-// just offers it as the subject text too, for the views that want it clickable.
+// task_link opens the Task record itself (not the Opportunity — that's crm_link,
+// already surfaced as the "Open in CRM" column).
 function subjectHtml(t, linked) {
   const text = esc(t.subject) || "(no subject)";
-  return linked && t.crm_link ? `<a href="${esc(t.crm_link)}" target="_blank" rel="noopener">${text}</a>` : text;
+  return linked && t.task_link ? `<a href="${esc(t.task_link)}" target="_blank" rel="noopener">${text}</a>` : text;
 }
 
 async function fetchDecorated(extra = {}) {

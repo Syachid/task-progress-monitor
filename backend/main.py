@@ -26,7 +26,7 @@ from pydantic import BaseModel  # noqa: E402
 import buckets  # noqa: E402
 import manager_roster as manager_roster_module  # noqa: E402
 import store  # noqa: E402
-from crm_client import CrmClient, opportunity_deep_link  # noqa: E402
+from crm_client import CrmClient, opportunity_deep_link, task_deep_link  # noqa: E402
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 DEFAULT_STALE_DAYS = int(os.getenv("STALE_DAYS", "14"))
@@ -137,6 +137,7 @@ async def decorate(tasks: list[dict], stale_days: int) -> list[dict]:
             if task.get("related_object_type") == "Opportunity"
             else None
         )
+        row["task_link"] = task_deep_link(task.get("id"))
         decorated.append(row)
     return decorated
 

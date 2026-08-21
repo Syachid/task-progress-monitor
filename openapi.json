@@ -370,6 +370,7 @@
           "manager": { "type": "string", "nullable": true },
           "delete_marked": { "type": "boolean" },
           "crm_link": { "type": "string", "nullable": true },
+          "task_link": { "type": "string", "nullable": true },
           "flags": {
             "type": "object",
             "properties": {

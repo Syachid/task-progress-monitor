@@ -37,6 +37,7 @@ import httpx
 CRM_API_BASE_URL = os.getenv("CRM_API_BASE_URL", "").rstrip("/")
 CRM_API_KEY = os.getenv("CRM_API_KEY", "")
 CRM_OPPORTUNITY_URL_TEMPLATE = os.getenv("CRM_OPPORTUNITY_URL_TEMPLATE", "")
+CRM_TASK_URL_TEMPLATE = os.getenv("CRM_TASK_URL_TEMPLATE", "")
 
 # Indonesia record type — Task/Opportunity and Account use different numeric ids.
 INDONESIA_RECORD_TYPE_ID = 100
@@ -49,6 +50,12 @@ def opportunity_deep_link(opportunity_id) -> str | None:
     if not CRM_OPPORTUNITY_URL_TEMPLATE or opportunity_id in (None, ""):
         return None
     return CRM_OPPORTUNITY_URL_TEMPLATE.format(id=opportunity_id)
+
+
+def task_deep_link(task_id) -> str | None:
+    if not CRM_TASK_URL_TEMPLATE or task_id in (None, ""):
+        return None
+    return CRM_TASK_URL_TEMPLATE.format(id=task_id)
 
 
 class CrmClient:
