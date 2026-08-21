@@ -172,8 +172,8 @@
     </select>
     <input type="search" id="q" placeholder="Search subject, description, client…">
     <select id="pageSize">
-      <option value="25">25 / page</option>
-      <option value="50" selected>50 / page</option>
+      <option value="25" selected>25 / page</option>
+      <option value="50">50 / page</option>
       <option value="100">100 / page</option>
     </select>
     <button id="refresh" class="primary">Sync from CRM</button>
@@ -188,7 +188,7 @@
 
 <script>
 const $ = (s) => document.querySelector(s);
-const state = { bucket: null, view: "tasks", staleDays: 14, owner: "", manager: "", taskType: "Task", sort: "last_touched", q: "", page: 1, pageSize: 50 };
+const state = { bucket: null, view: "tasks", staleDays: 14, owner: "", manager: "", taskType: "Task", sort: "last_touched", q: "", page: 1, pageSize: 25 };
 
 // Switching tabs (Task List <-> Alex Direction <-> Hypercare/Strategic <-> Must Win)
 // re-runs the same /api/tasks or /api/creators GET whenever the filters haven't
