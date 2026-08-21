@@ -70,6 +70,7 @@
   .b-never { background: var(--amber-soft); color: var(--amber); }
   .b-stale { background: var(--slate-soft); color: var(--slate); }
   .b-nodue { background: var(--slate-soft); color: var(--slate); }
+  .b-baddue { background: var(--slate-soft); color: var(--slate); }
   a { color: var(--accent); }
   .empty, .loading { padding: 40px; text-align: center; color: var(--muted); }
   .err { background: var(--accent-soft); color: var(--red); border: 1px solid var(--red);
@@ -337,6 +338,10 @@ function badges(f) {
   if (f.never_updated) out += `<span class="badge b-never">Never updated</span>`;
   if (f.stale) out += `<span class="badge b-stale">Stale ${f.days_since_touch}d</span>`;
   if (f.no_due_date) out += `<span class="badge b-nodue">No due date</span>`;
+  // Due date earlier than the task's own created date — almost always a typo'd year
+  // (e.g. 2024 instead of 2026), not real lateness, so it's excluded from Overdue
+  // rather than shown as one. Surfaced here so that exclusion isn't silent.
+  if (f.bad_due_date) out += `<span class="badge b-baddue" title="Due date is before this task was created — likely a typo'd year, excluded from Overdue">Bad due date</span>`;
   return out || "—";
 }
 
