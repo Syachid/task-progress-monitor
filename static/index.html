@@ -561,9 +561,18 @@ $("#refresh").onclick = async (e) => {
   e.target.disabled = true; e.target.textContent = "Syncing…";
   try {
     const r = await fetch("/api/sync", { method: "POST" });
-    if (!r.ok) showError("Sync failed: " + ((await r.json()).detail || r.status));
-    await refreshAll();
+    if (!r.ok) {
+      // A slow sync can outlast the platform's SSO proxy timeout, which returns an
+      // HTML error page (not JSON) — parsing that as JSON would throw and skip the
+      // refresh below, leaving the UI silently stuck on stale data.
+      let detail = r.status;
+      try { detail = (await r.json()).detail || r.status; } catch { /* non-JSON error body */ }
+      showError("Sync failed: " + detail);
+    }
+  } catch (e) {
+    showError("Sync failed: " + e.message);
   } finally {
+    await refreshAll();
     e.target.disabled = false; e.target.textContent = "Sync from CRM";
   }
 };
