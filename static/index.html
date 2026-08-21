@@ -190,6 +190,20 @@
 const $ = (s) => document.querySelector(s);
 const state = { bucket: null, view: "tasks", staleDays: 14, owner: "", manager: "", taskType: "Task", sort: "last_touched", q: "", page: 1, pageSize: 50 };
 
+// Switching tabs (Task List <-> Alex Direction <-> Hypercare/Strategic <-> Must Win)
+// re-runs the same /api/tasks or /api/creators GET whenever the filters haven't
+// changed, so cache by the exact request URL and reuse across tab switches — a filter
+// change already produces a different URL (see qs()) and falls through to a real fetch
+// on its own. Cleared wherever the underlying data can have actually changed.
+const fetchCache = new Map();
+function clearFetchCache() { fetchCache.clear(); }
+async function cachedGet(url) {
+  if (fetchCache.has(url)) return fetchCache.get(url);
+  const d = await fetch(url, { cache: "no-store" }).then((r) => r.json());
+  fetchCache.set(url, d);
+  return d;
+}
+
 // Delete marks are shared, server-persisted state ("flag this for someone to delete in
 // CRM") — every viewer of the dashboard sees the same marks (unlike the static artifact
 // report's per-browser localStorage version). Not wired to any actual CRM write, since
@@ -202,6 +216,7 @@ async function toggleDelete(id, currentlyMarked) {
       body: JSON.stringify({ marked: !currentlyMarked }),
     });
   } catch {}
+  clearFetchCache();
   render();
 }
 function deleteToggleHtml(t) {
@@ -292,6 +307,7 @@ $("#rosterUpload").onclick = async () => {
     status.textContent = `Success: ${d.names} names updated` +
       (gap ? ` · ${gap} names without Email (can't be mapped to SSO yet)` : "");
     input.value = "";
+    clearFetchCache();
     await loadFilterOptions();
   } catch (e) {
     status.textContent = "Failed: " + e.message;
@@ -338,8 +354,7 @@ async function fetchDecorated(extra = {}) {
   if (state.manager) params.manager = state.manager;
   if (state.q) params.q = state.q;
   Object.assign(params, extra);
-  const r = await fetch(`/api/tasks?${qs(params)}`);
-  const d = await r.json();
+  const d = await cachedGet(`/api/tasks?${qs(params)}`);
   return d.items;
 }
 
@@ -493,8 +508,7 @@ async function renderMustWin() {
 
 async function renderCreators() {
   $("#pager").innerHTML = "";
-  const r = await fetch(`/api/creators?${qs()}`);
-  const d = await r.json();
+  const d = await cachedGet(`/api/creators?${qs()}`);
   if (!d.items.length) { $("#view").innerHTML = `<div class="empty">No data yet.</div>`; return; }
 
   $("#view").innerHTML = `
@@ -516,8 +530,7 @@ async function renderCreators() {
 // Task Owner and Manager filter options are both derived from the same set of open Task
 // rows — one fetch, two tallies — rather than a dedicated /api/owners endpoint.
 async function loadFilterOptions() {
-  const r = await fetch(`/api/tasks?${qs({ task_type: "Task", bucket: "open" })}`);
-  const d = await r.json();
+  const d = await cachedGet(`/api/tasks?${qs({ task_type: "Task", bucket: "open" })}`);
 
   const ownerCounts = new Map();
   const managerCounts = new Map();
@@ -554,6 +567,7 @@ async function loadAll() {
 }
 
 async function refreshAll() {
+  clearFetchCache();
   if (await loadAll()) showError("Some dashboard data failed to refresh — retry Sync from CRM if this persists.");
   else hideError();
 }
