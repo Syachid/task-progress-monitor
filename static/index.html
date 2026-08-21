@@ -482,28 +482,53 @@ function oppCardHtml(o) {
 // opportunities sit in the top block regardless of whether they're also Strategic (their
 // chips show both); the bottom block is what's left — Strategic-only, no Hypercare.
 async function renderHypercareStrategic() {
-  $("#pager").innerHTML = "";
   const items = await fetchDecorated({ bucket: state.bucket || "open" });
   const opps = groupByOpportunity(items).filter((o) => o.tags.includes("HYPERCARE") || o.tags.includes("STRATEGIC"));
-  if (!opps.length) { $("#view").innerHTML = `<div class="empty">No Hypercare/Strategic-tagged opportunities match.</div>`; return; }
+  if (!opps.length) { $("#pager").innerHTML = ""; $("#view").innerHTML = `<div class="empty">No Hypercare/Strategic-tagged opportunities match.</div>`; return; }
   const top = sortBySeverity(opps.filter((o) => o.tags.includes("HYPERCARE")));
   const rest = sortBySeverity(opps.filter((o) => !o.tags.includes("HYPERCARE")));
-  const block = (label, group) => !group.length ? "" : `
-    <div class="tag-group">
-      <div class="tag-group-head">${tagChip(label)}<span class="tag-group-count">${group.length} opportunities</span></div>
-      ${group.map(oppCardHtml).join("")}
-    </div>`;
-  $("#view").innerHTML = block("HYPERCARE", top) + block("STRATEGIC", rest);
+  // Flatten to one paginated sequence (HYPERCARE first, then STRATEGIC-only) but keep
+  // each block's *total* count in its header — not just how many of it landed on this
+  // page — so "12 opportunities" still means the whole group, same as before pagination.
+  const all = [
+    ...top.map((o) => ({ o, label: "HYPERCARE", total: top.length })),
+    ...rest.map((o) => ({ o, label: "STRATEGIC", total: rest.length })),
+  ];
+
+  const pages = Math.max(1, Math.ceil(all.length / state.pageSize));
+  if (state.page > pages) state.page = pages;
+  const start = (state.page - 1) * state.pageSize;
+  const pageItems = all.slice(start, start + state.pageSize);
+  renderPager(all.length, pages, start, pageItems.length);
+
+  let html = "";
+  for (let i = 0; i < pageItems.length; ) {
+    const { label, total } = pageItems[i];
+    const group = [];
+    while (i < pageItems.length && pageItems[i].label === label) { group.push(pageItems[i].o); i++; }
+    html += `
+      <div class="tag-group">
+        <div class="tag-group-head">${tagChip(label)}<span class="tag-group-count">${total} opportunities</span></div>
+        ${group.map(oppCardHtml).join("")}
+      </div>`;
+  }
+  $("#view").innerHTML = html;
 }
 
 // Everything tagged MUST WIN, flat — no sub-grouping. Cards still show whichever other
 // tags (Hypercare/Strategic) an opportunity happens to also carry.
 async function renderMustWin() {
-  $("#pager").innerHTML = "";
   const items = await fetchDecorated({ bucket: state.bucket || "open" });
   const opps = sortBySeverity(groupByOpportunity(items).filter((o) => o.tags.includes("MUST WIN")));
-  if (!opps.length) { $("#view").innerHTML = `<div class="empty">No Must Win-tagged opportunities match.</div>`; return; }
-  $("#view").innerHTML = opps.map(oppCardHtml).join("");
+  if (!opps.length) { $("#pager").innerHTML = ""; $("#view").innerHTML = `<div class="empty">No Must Win-tagged opportunities match.</div>`; return; }
+
+  const pages = Math.max(1, Math.ceil(opps.length / state.pageSize));
+  if (state.page > pages) state.page = pages;
+  const start = (state.page - 1) * state.pageSize;
+  const pageItems = opps.slice(start, start + state.pageSize);
+  renderPager(opps.length, pages, start, pageItems.length);
+
+  $("#view").innerHTML = pageItems.map(oppCardHtml).join("");
 }
 
 async function renderCreators() {
