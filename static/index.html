@@ -324,6 +324,13 @@ function badges(f) {
   return out || "—";
 }
 
+// crm_link is the same Opportunity deep link already surfaced as "Open in CRM" — this
+// just offers it as the subject text too, for the views that want it clickable.
+function subjectHtml(t, linked) {
+  const text = esc(t.subject) || "(no subject)";
+  return linked && t.crm_link ? `<a href="${esc(t.crm_link)}" target="_blank" rel="noopener">${text}</a>` : text;
+}
+
 async function fetchDecorated(extra = {}) {
   const params = { task_type: state.taskType, sort: state.sort };
   if (state.bucket) params.bucket = state.bucket;
@@ -336,7 +343,10 @@ async function fetchDecorated(extra = {}) {
   return d.items;
 }
 
-function taskRowsHtml(items) {
+// linkSubjects: only Alex Direction wants the Subject cell itself clickable (Task List
+// keeps it plain — it already has the "Open in CRM" column, and making every row's
+// subject a link there too would be link clutter on the highest-traffic tab).
+function taskRowsHtml(items, { linkSubjects = false } = {}) {
   if (!items.length) { $("#pager").innerHTML = ""; return `<div class="empty">No tasks match this filter.</div>`; }
 
   const pages = Math.max(1, Math.ceil(items.length / state.pageSize));
@@ -354,7 +364,7 @@ function taskRowsHtml(items) {
       <tbody>${rows.map((t) => `
         <tr>
           <td class="rid nowrap">${t.id}</td>
-          <td><div class="subj">${esc(t.subject) || "(no subject)"}</div>
+          <td><div class="subj">${subjectHtml(t, linkSubjects)}</div>
               ${t.description ? `<div class="desc">${esc(t.description)}</div>` : ""}</td>
           <td class="nowrap">${esc(t.owner_name)}</td>
           <td class="nowrap">${esc(t.manager)}</td>
@@ -388,7 +398,7 @@ async function renderTasks() {
 // "Alex Direction" replicates the CRM habit of filtering by "subject contains Alex
 // Direction" — same table/controls as Daftar Task, just a pre-narrowed base list.
 async function renderAlex() {
-  $("#view").innerHTML = taskRowsHtml(await fetchDecorated({ alex_direction: true }));
+  $("#view").innerHTML = taskRowsHtml(await fetchDecorated({ alex_direction: true }), { linkSubjects: true });
 }
 
 // ---------------------------------------------------------- opportunity grouping
@@ -442,7 +452,7 @@ function oppCardHtml(o) {
             <div class="tk-date ${t.flags.due_at ? "" : "none"}">${t.flags.due_at ? fmtDate(t.flags.due_at) : "no due date"}</div>
             <div class="tk-body">
               <div class="tk-text">
-                <div class="tk-sub">${esc(t.subject) || "(no subject)"}
+                <div class="tk-sub">${subjectHtml(t, true)}
                   <span style="color:var(--muted)">(${esc(t.status)})</span></div>
                 <div class="tk-meta"><span class="rid">#${t.id}</span> · Owner: ${esc(t.owner_name)} · Manager: ${esc(t.manager)}${badges(t.flags) !== "—" ? " · " + badges(t.flags) : ""}</div>
               </div>
