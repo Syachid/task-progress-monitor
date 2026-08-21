@@ -63,6 +63,14 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Task Progress Monitor — Indonesia", lifespan=lifespan)
 
 
+@app.middleware("http")
+async def no_store_api_cache(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/api"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 # --------------------------------------------------------------------------- helpers
 
 

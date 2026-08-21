@@ -1,0 +1,391 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Task Progress Monitor — Indonesia",
+    "description": "Read-only dashboard over SalesCRM Tasks for Ninja Van Indonesia's Sales org. Pulls Tasks from CRM, caches them locally, and computes never-updated/stale/overdue/no-due-date buckets. Visibility is scoped per viewer via SSO email against a manually-uploaded manager roster.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Liveness probe used by the platform.",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "Service is up.",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "properties": { "status": { "type": "string", "example": "ok" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Serve the dashboard's single-page app HTML.",
+        "operationId": "index",
+        "responses": {
+          "200": { "description": "The static index.html file.", "content": { "text/html": { "schema": { "type": "string" } } } }
+        }
+      }
+    },
+    "/api/summary": {
+      "get": {
+        "summary": "Bucket counts (never-updated/stale/overdue/no-due-date) for the viewer's visible tasks, plus last-sync status.",
+        "operationId": "summary",
+        "parameters": [
+          { "name": "stale_days", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 365, "default": 14 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bucket counts and sync metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "counts": { "type": "object", "additionalProperties": { "type": "integer" } },
+                    "stale_days": { "type": "integer" },
+                    "last_sync_at": { "type": "string", "format": "date-time", "nullable": true },
+                    "last_sync_error": { "type": "string", "nullable": true },
+                    "crm_configured": { "type": "boolean" },
+                    "generated_at": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tasks": {
+      "get": {
+        "summary": "List the viewer's visible tasks, decorated with buckets/manager/tags, filtered and sorted.",
+        "operationId": "listTasks",
+        "parameters": [
+          { "name": "bucket", "in": "query", "required": false, "schema": { "type": "string", "enum": ["never_updated", "stale", "overdue", "no_due_date", "bad_due_date", "open", "all"] } },
+          { "name": "creator", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "owner", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "manager", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "alex_direction", "in": "query", "required": false, "schema": { "type": "boolean", "default": false } },
+          { "name": "task_type", "in": "query", "required": false, "schema": { "type": "string", "default": "Task" } },
+          { "name": "q", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "sort", "in": "query", "required": false, "schema": { "type": "string", "enum": ["last_touched", "due_date", "created_at", "subject"], "default": "last_touched" } },
+          { "name": "stale_days", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 365, "default": 14 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching tasks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": { "type": "array", "items": { "$ref": "#/components/schemas/DecoratedTask" } },
+                    "total": { "type": "integer" },
+                    "stale_days": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/creators": {
+      "get": {
+        "summary": "Per-creator rollup of task counts and bucket breakdowns, for who is sitting on the most unattended work.",
+        "operationId": "creators",
+        "parameters": [
+          { "name": "stale_days", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 365, "default": 14 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Per-creator rollups.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "created_by": { "type": "integer", "nullable": true },
+                          "name": { "type": "string" },
+                          "total": { "type": "integer" },
+                          "open": { "type": "integer" },
+                          "never_updated": { "type": "integer" },
+                          "stale": { "type": "integer" },
+                          "overdue": { "type": "integer" },
+                          "no_due_date": { "type": "integer" },
+                          "bad_due_date": { "type": "integer" }
+                        }
+                      }
+                    },
+                    "total": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/manager-roster": {
+      "post": {
+        "summary": "Upload/replace the manager roster CSV (Name/ASM/Email/Sales Head), restricted to roster admins.",
+        "operationId": "uploadManagerRoster",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": { "file": { "type": "string", "format": "binary" } },
+                "required": ["file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Roster replaced.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "names": { "type": "integer" },
+                    "uploaded_at": { "type": "string", "format": "date-time" },
+                    "names_without_email": { "type": "array", "items": { "type": "string" } }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Malformed CSV, wrong encoding, or missing required columns." },
+          "403": { "description": "Caller is not a roster admin." }
+        }
+      },
+      "get": {
+        "summary": "Roster size and upload recency, to confirm a re-upload worked or flag a stale roster.",
+        "operationId": "managerRosterStatus",
+        "responses": {
+          "200": {
+            "description": "Roster status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "names": { "type": "integer" },
+                    "uploaded_at": { "type": "string", "format": "date-time", "nullable": true },
+                    "age_days": { "type": "integer", "nullable": true },
+                    "names_without_email": { "type": "array", "items": { "type": "string" } },
+                    "stale": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sync": {
+      "post": {
+        "summary": "Pull native Indonesia tasks from CRM, then enrich opportunities and account tags.",
+        "operationId": "sync",
+        "responses": {
+          "200": {
+            "description": "Sync result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "synced": { "type": "integer" },
+                    "opportunities_enriched": { "type": "integer" },
+                    "tagged_accounts": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "502": { "description": "CRM sync failed." }
+        }
+      }
+    },
+    "/api/verify": {
+      "get": {
+        "summary": "Gate check: compare live CRM counts against the counts observed at design time, to catch API-key visibility drift.",
+        "operationId": "verify",
+        "responses": {
+          "200": {
+            "description": "Verification result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "checks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "expected_at_design_time": { "type": "integer" },
+                          "actual": { "type": "integer", "nullable": true },
+                          "matches": { "type": "boolean" }
+                        }
+                      }
+                    },
+                    "all_match": { "type": "boolean" },
+                    "cached_rows": { "type": "integer" },
+                    "note": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "502": { "description": "CRM probe failed." },
+          "503": { "description": "CRM not configured." }
+        }
+      }
+    },
+    "/api/tasks/{task_id}/delete-mark": {
+      "post": {
+        "summary": "Set or clear the shared \"flag for CRM deletion\" mark on a task, server-side so all viewers see the same state.",
+        "operationId": "setDeleteMark",
+        "parameters": [
+          { "name": "task_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "marked": { "type": "boolean" } },
+                "required": ["marked"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mark updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "task_id": { "type": "integer" },
+                    "marked": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "summary": "Viewer identity and resulting visibility scope (all/team/self), from the SSO-forwarded email.",
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "description": "Viewer scope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mode": { "type": "string", "enum": ["all", "team", "self"] },
+                    "viewer_name": { "type": "string", "nullable": true },
+                    "team_size": { "type": "integer", "nullable": true },
+                    "is_roster_admin": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/whoami": {
+      "get": {
+        "summary": "Identity of the CRM API key's own user, as seen by SalesCRM.",
+        "operationId": "whoami",
+        "responses": {
+          "200": { "description": "CRM user identity (shape defined by SalesCRM's whoami response)." },
+          "502": { "description": "CRM call failed." },
+          "503": { "description": "CRM not configured." }
+        }
+      }
+    },
+    "/api/export.csv": {
+      "get": {
+        "summary": "Export the viewer's visible tasks (optionally filtered by bucket/type) as a CSV download.",
+        "operationId": "exportCsv",
+        "parameters": [
+          { "name": "bucket", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "stale_days", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 365, "default": 14 } },
+          { "name": "task_type", "in": "query", "required": false, "schema": { "type": "string", "default": "Task" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file download.",
+            "content": { "text/csv": { "schema": { "type": "string" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DecoratedTask": {
+        "type": "object",
+        "description": "A raw CRM Task row decorated with computed bucket flags, creator/manager names, tags, and a CRM deep link.",
+        "properties": {
+          "id": { "type": "integer" },
+          "subject": { "type": "string", "nullable": true },
+          "description": { "type": "string", "nullable": true },
+          "status": { "type": "string", "nullable": true },
+          "task_type": { "type": "string", "nullable": true },
+          "owner_id": { "type": "integer", "nullable": true },
+          "owner_name": { "type": "string", "nullable": true },
+          "created_by": { "type": "integer", "nullable": true },
+          "created_by_name": { "type": "string" },
+          "related_object_type": { "type": "string", "nullable": true },
+          "related_record_id": { "type": "integer", "nullable": true },
+          "opportunity_name": { "type": "string", "nullable": true },
+          "account_name": { "type": "string", "nullable": true },
+          "opportunity_stage": { "type": "string", "nullable": true },
+          "tags": { "type": "array", "items": { "type": "string", "enum": ["MUST WIN", "HYPERCARE", "STRATEGIC"] } },
+          "manager": { "type": "string", "nullable": true },
+          "delete_marked": { "type": "boolean" },
+          "crm_link": { "type": "string", "nullable": true },
+          "flags": {
+            "type": "object",
+            "properties": {
+              "is_open": { "type": "boolean" },
+              "never_updated": { "type": "boolean" },
+              "stale": { "type": "boolean" },
+              "overdue": { "type": "boolean" },
+              "no_due_date": { "type": "boolean" },
+              "bad_due_date": { "type": "boolean" },
+              "due_at": { "type": "string", "format": "date-time", "nullable": true },
+              "days_overdue": { "type": "integer", "nullable": true },
+              "days_since_touch": { "type": "integer", "nullable": true }
+            }
+          }
+        }
+      }
+    }
+  }
+}
