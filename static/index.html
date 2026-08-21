@@ -536,15 +536,28 @@ async function loadFilterOptions() {
 const VIEWS = { tasks: renderTasks, alex: renderAlex, hs: renderHypercareStrategic, mustwin: renderMustWin, creators: renderCreators };
 function render() { return VIEWS[state.view](); }
 
+async function loadAll() {
+  // render() included: fetchDecorated() inside it hits /api/tasks too, so a transient
+  // failure there needs the same retry as the summary/scope/filter loaders below.
+  const results = await Promise.allSettled([loadSummary(), loadViewerScope(), loadFilterOptions(), render()]);
+  return results.some((r) => r.status === "rejected");
+}
+
 async function refreshAll() {
-  // Each loader can 502 (HTML body, not JSON) if the platform's SSO proxy times out
-  // waiting on a slow backend — e.g. right after kicking off a CRM sync. Run them
-  // independently so one transient failure doesn't leave the whole dashboard stuck on
-  // stale data; render() still runs with whatever state we did manage to load.
-  const results = await Promise.allSettled([loadSummary(), loadViewerScope(), loadFilterOptions()]);
-  const failed = results.some((r) => r.status === "rejected");
-  if (failed) showError("Some dashboard data failed to refresh — retry Sync from CRM if this persists.");
-  await render();
+  // Right after a CRM sync, the backend can be busy enough that the platform's SSO
+  // proxy 502s (HTML body, not JSON) for a few seconds across every endpoint — not
+  // just /api/sync. Confirmed live: retrying shortly after clears it every time. One
+  // silent retry covers that window; only surface an error if it's still failing.
+  if (await loadAll()) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    if (await loadAll()) {
+      showError("Some dashboard data failed to refresh — retry Sync from CRM if this persists.");
+    } else {
+      hideError();
+    }
+  } else {
+    hideError();
+  }
 }
 
 document.querySelectorAll(".tab").forEach((tab) => {
